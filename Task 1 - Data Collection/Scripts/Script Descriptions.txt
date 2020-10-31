@@ -1,0 +1,66 @@
+The scripts are named according to which portion of the Task they're related to; so, all of the "genius_***" scripts have something to do w/ scraping / validating the Genius data. 
+
+Here's a more detailed breakdown of what each of these scripts do: 
+
+
+
+billboard_scraper.py
+====================
+This script scrapes Billboard chart data for given years! 
+
+
+
+dataset_clean.py
+================
+This script takes in a folder of Genius .json's, scrapes some relevant information from them (relevant to the social network, that is), and then dumps each of the new .json's into another folder. 
+
+
+
+dataset_deduplicate.py
+======================
+This script takes in a folder of *cleaned* .json's (cleaned using dataset_clean.py) and then deduplicates and merges them together into one large .json 
+
+
+
+dataset_prune.py
+================
+This script will iterate over the output of the genius_validate script, and copy any of the songs w/ a 1 (meaning "correct Genius information was found") to a user-specified folder
+
+
+
+genius_scraper_from_billboard.py
+================================
+This script will take in an .xlsx of song titles and artists (essentially, the first two columns of the output from the billboard_scraper.py script; each song, artist pair needs to have a unique ID in the third column, though!) and search Genius for each of them, saving a .json of the scraped data to disk. 
+
+
+
+genius_scraper_from_msd.py
+================================
+This script is fairly similar to the genius_scraper_from_billboard.py script, except it's scraping some data that was extracted from the MSD dataset. I probably could have made both of these into one script that takes in more general lists - a problem for another day! 
+
+
+
+genius_stats.py
+===================
+This script was written to get an idea of the distribution of some of the various attributes attached to the song .json's. A player passes the script a folder of Genius-scraped .json's, and this'll calculate various statistics about each attributes. (You can also specify *how many* of the .json's the script ought to sample for stats; this could save time if you have 100,000+ .json's) 
+
+
+
+genius_validate.py
+===================
+This script takes in a folder of Genius .json's, as well as a list of the original song, artist pairs, and then uses some text-comparison algorithms (Levenshtein distance) to decide whether or not the song pulled from Genius is actually the song that we'd searched for. (Generally, there's an acceptance rate of ~65%, after certain text transformations - like removing parentheses - are made.) 
+
+
+
+h5_to_xlsx_1.py and h5_to_xlsx_2.py 
+===================================
+These two scripts were used to extract data from the .h5 metadata file that contained metadata for the MSD. The 1st script seems to extract data from the metadata tab, whereas the second script extracts data from the analysis tab, and only for the songs which had years attached to them. 
+
+
+
+
+
+
+
+
+
