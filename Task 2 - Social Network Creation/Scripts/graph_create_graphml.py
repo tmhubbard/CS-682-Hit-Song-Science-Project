@@ -7,23 +7,126 @@
 # =========================
 
 # Import statements
-import json
+import json, datetime, ast
+import lxml.etree as ET
 import pandas as pd
 import networkx as nx
-import ast
 
 # Parameter to do "more connections graph"
 MORE_CONNECTIONS = True
 MORE_CONNECTIONS_SMART = True
 
+# If this is true, it'll only create the graph out of the first 100
+# songs. (This is meant to test if things are working)
+EARLY_STOP = False
+
+# Some parameters for the gexf stuff
+nodesDict = {}
+edgesDict = {}
+nodeStartDict = {}
+nodeEndDict = {}
+edgeStartDict = {}
+edgeEndDict = {}
+songYearDict = {}
+expirationDate = 1
+
 # =========================
 #       * METHODS *
 # =========================
 
+# This method will create a node in the graph 
+def createGexfNode(gexfNodesElement, nodeTuple):
+	nodeID, nodeData = nodeTuple
+	startDate, endDate = findNodeLifespan(nodeTuple)
+	nodesDict[nodeID] = ET.SubElement(gexfNodesElement, "node", id=str(nodeID), label=str(nodeID), start=startDate, end=endDate)
+	nodeAttElement = ET.SubElement(nodesDict[nodeID], "attvalues")
+	nodeAttDict = {}
+	nodeDataList = list(nodeData.keys())
+	for attNum, key in enumerate(nodeDataList):
+		attValue = nodeData[key]
+		nodeAttDict[key] = ET.SubElement(nodeAttElement, "attvalue", {"for": str(attNum), "value": str(attValue)})
+
+# This method will create an edge in the graph 
+def createGexfEdge(gexfEdgesElement, edgeTuple):
+	sourceNode, targetNode, edgeDataDict = edgeTuple
+	startDate, endDate = findEdgeLifespan(edgeTuple)
+	songID = edgeDataDict["songID"]
+	edgeWeight = str(len(((ast.literal_eval(edgeDataDict["relationship"])))))
+	edgeID = str(sourceNode) + " - " + str(targetNode) + " - " + str(songID)
+	edgesDict[edgeID] = ET.SubElement(gexfEdgesElement, "edge", id=str(edgeID), label=str(edgeID), source=str(sourceNode), target=str(targetNode), start=startDate, end=endDate, weight=edgeWeight)
+	edgeAttElement = ET.SubElement(edgesDict[edgeID], "attvalues")
+	edgeAttDict = {}
+	edgeDataList = list(edgeDataDict.keys())
+	for attNum, key in enumerate(edgeDataList):
+		attValue = edgeDataDict[key]
+		# print(key)
+		# print(attValue)
+		edgeAttDict[key] = ET.SubElement(edgeAttElement, "attvalue", {"for": str(attNum), "value": str(attValue)})
+
+# This method will return a tuple of (start year, end year) when
+# given a nodeTuple
+def findNodeLifespan(nodeTuple):
+	nodeID, nodeData = nodeTuple
+	typeList = ast.literal_eval(nodeData["types"])
+	firstYear = None
+	lastYear = None
+	for curType, curSongID in typeList:
+		curYear = songYearDict[curSongID]
+		if (firstYear is None):
+			firstYear = curYear
+		if (lastYear is None):
+			lastYear = curYear
+		if (curYear < firstYear):
+			firstYear = curYear
+		if (curYear > lastYear):
+			lastYear = curYear
+	firstYearString = str(firstYear) + "-01-01"
+	lastYearString = str(int(lastYear) + (expirationDate)) + "-01-01"
+	return (firstYearString, lastYearString)
+
+# This method will return a tuple of (start year, end year) when
+# given an edgeTuple
+def findEdgeLifespan(edgeTuple):
+	sourceNode, targetNode, edgeData = edgeTuple
+	edgeYear = ast.literal_eval(edgeData["year"])
+	firstYear = None
+	lastYear = None
+
+	# If we're dealing w/ an undirected graph
+	if (isinstance(edgeYear, list)):
+		for curYear in edgeYear:
+			if (firstYear is None):
+				firstYear = curYear
+			if (lastYear is None):
+				lastYear = curYear
+			if (curYear < firstYear):
+				firstYear = curYear
+			if (curYear > lastYear):
+				lastYear = curYear
+
+	# Otherwise, if we're dealing w/ a directed graph
+	else:
+		firstYear = edgeYear
+		lastYear = edgeYear
+
+	firstYearString = str(firstYear) + "-01-01"
+	lastYearString = str(int(lastYear) + expirationDate) + "-01-01"
+	return (firstYearString, lastYearString)
 
 # =========================
 #        * MAIN * 
 # =========================
+
+# Ask the user if they want to create an undirected / directed graph
+userInput = input("\nWhich type of graph do you want to create?\n\n\t1) Undirected Graph\n\t2) Directed Graph\n\nType either number as your choice, and hit ENTER: ")
+if (userInput == "1"):
+	MORE_CONNECTIONS = True
+	MORE_CONNECTIONS_SMART = True
+elif (userInput == "2"):
+	MORE_CONNECTIONS = False
+	MORE_CONNECTIONS_SMART = False
+
+# 1) Load your data for the gexf
 
 # Create the graph
 graph = nx.DiGraph()
@@ -37,9 +140,13 @@ with open("../Data/Genius Info - Billboard + MSD, 1990-2010.json", "r", encoding
 	songList = json.load(datasetJson)["songs"]
 	for songNum, songDict in enumerate(songList):
 
+		if (EARLY_STOP and songNum == 100):
+			break
+
 		print("Reading in song %d..." % (songNum))
 
 		artistName, artistID, artistTypes = songDict["artist"]
+		artistID = str(artistID) + " (" + artistName + ")"
 		if (not artistID in artistDict):
 			artistDict[artistID] = {"name": artistName, "ID": artistID, "songs": [], "collaborators": [], "types": []}
 
@@ -49,9 +156,13 @@ with open("../Data/Genius Info - Billboard + MSD, 1990-2010.json", "r", encoding
 		songName[songID] = songDict["title"][0]
 		artistDict[artistID]["songs"].append(songID)
 
+		# Add the song, year combo to the songYearDict
+		songYearDict[songID] = songDict["year"]
+
 		# Add collaborators
 		for collaborator in songDict["collaborators"]:
 			collaboratorName, collaboratorID, collaboratorTypes = collaborator
+			collaboratorID = str(collaboratorID) + " (" + collaboratorName + ")"
 			if (not collaboratorID in artistDict):
 				artistDict[collaboratorID] = {"name": collaboratorName, "ID": collaboratorID, "songs": [], "collaborators": [], "types": []}
 
@@ -66,6 +177,7 @@ with open("../Data/Genius Info - Billboard + MSD, 1990-2010.json", "r", encoding
 
 					# Collect info
 					otherColabName, otherColabID, otherColabTypes = otherColab
+					otherColabID = str(otherColabID) + " (" + otherColabName + ")"
 
 					# Skip it if it's a self loop
 					if (otherColabID==collaboratorID): continue
@@ -75,14 +187,14 @@ with open("../Data/Genius Info - Billboard + MSD, 1990-2010.json", "r", encoding
 						artistDict[otherColabID] = {"name": otherColabName, "ID": otherColabID, "songs": [], "collaborators": [], "types": []}
 
 					# Add this otherColab ID to the artist
-					artistDict[collaboratorID]["collaborators"].append((otherColabID, songID))
+					artistDict[collaboratorID]["collaborators"].append((otherColabID, songID, True))
 
 			# Add types
 			for collaboratorType in collaboratorTypes:
 				artistDict[collaboratorID]["types"].append((collaboratorType, songID))
 
 			# Add this collaborator ID to the artist
-			artistDict[artistID]["collaborators"].append((collaboratorID, songID))
+			artistDict[artistID]["collaborators"].append((collaboratorID, songID, False))
 
 		# Add types
 		for artistType in artistTypes:
@@ -111,7 +223,7 @@ for artistNum, artistID in enumerate(list(artistDict.keys())):
 	typeList = curArtistDict["types"]
 	maxType = curArtistDict["maxType"]
 
-	print("%d / %d: Adding %s to the graph..." % (artistNum, numArtists, artistName))
+	print("\n%d / %d: Adding %s to the graph..." % (artistNum, numArtists, artistName))
 
 	# Add the node for the current artist
 	graph.add_node(artistID, name=artistName, types=str(typeList), maxType=maxType)
@@ -120,7 +232,7 @@ for artistNum, artistID in enumerate(list(artistDict.keys())):
 	for collaborator in collaboratorList:
 
 		# If the collaborator isn't in the graph, create a node for them
-		collaboratorID, songID = collaborator
+		collaboratorID, songID, coColab = collaborator
 		curRelationship = "<NONE>"
 		collaboratorName = artistDict[collaboratorID]["name"]
 		collaboratorTypes = artistDict[collaboratorID]["types"]
@@ -172,13 +284,19 @@ for artistNum, artistID in enumerate(list(artistDict.keys())):
 						relationshipList = ast.literal_eval(edgeData["relationship"])
 
 					# Add this collaboration's information to the graph
-					songIDList.append(songID)
-					songNameList.append(songName[songID])
-					yearList.append(songYear[songID])
-					relationshipList.append(coCollab)
+					if (not songID in songIDList):
+						songIDList.append(songID)
+						songNameList.append(songName[songID])
+						yearList.append(songYear[songID])
+						relationshipList.append(coCollab)
 
 					# Add the edge to the dict
 					graph.add_edge(collaboratorID, otherColabID, songID=str(songIDList), song=str(songNameList), year = str(yearList), relationship=str(relationshipList))
+
+			# If coColab is set to true, we'll change the relationship to "Co-collaborator"
+			colabRelationship = curRelationship
+			if (coColab):
+				colabRelationship = "Co-collaborator"
 
 			# Now, add an edge between the collaborator and the primary artist.
 			# Since we're doing an undirected graph w/ MORE_CONNECTIONS, though,
@@ -187,18 +305,20 @@ for artistNum, artistID in enumerate(list(artistDict.keys())):
 			songNameList = []
 			yearList = []
 			relationshipList = []
-			if (graph.has_edge(collaboratorID, otherColabID)):
-				edgeData = graph.get_edge_data(collaboratorID, otherColabID)
+			if (graph.has_edge(artistID, collaboratorID)):
+				edgeData = graph.get_edge_data(artistID, collaboratorID)
 				songIDList = ast.literal_eval(edgeData["songID"])
-				songList = ast.literal_eval(edgeData["song"])
+				songNameList = ast.literal_eval(edgeData["song"])
 				yearList = ast.literal_eval(edgeData["year"])
 				relationshipList = ast.literal_eval(edgeData["relationship"])
 
-			# Add this collaboration's information to the graph
-			songIDList.append(songID)
-			songNameList.append(songName[songID])
-			yearList.append(songYear[songID])
-			relationshipList.append(curRelationship)
+			# Add this collaboration's information to the graph if it wasn't
+			# there before
+			if (not songID in songIDList):
+				songIDList.append(songID)
+				songNameList.append(songName[songID])
+				yearList.append(songYear[songID])
+				relationshipList.append(colabRelationship)
 
 			# Add the edge to the dict
 			graph.add_edge(collaboratorID, artistID, songID=str(songIDList), song=str(songNameList), year=str(yearList), relationship=str(relationshipList))
@@ -206,8 +326,34 @@ for artistNum, artistID in enumerate(list(artistDict.keys())):
 		# If this isn't MORE_CONNECTIONS... just add the edge between
 		# the collaborator and the primary_artist! 
 		else:
+
+			# Now, add an edge between the collaborator and the primary artist.
+			songIDList = []
+			songNameList = []
+			yearList = []
+			relationshipList = []
+			if (graph.has_edge(collaboratorID, artistID)):
+				edgeData = graph.get_edge_data(collaboratorID, artistID)
+				songIDList = ast.literal_eval(edgeData["songID"])
+				songNameList = ast.literal_eval(edgeData["song"])
+				yearList = ast.literal_eval(edgeData["year"])
+				relationshipList = ast.literal_eval(edgeData["relationship"])
+
+			# Add this collaboration's information to the graph if it wasn't
+			# there before
+			if (not songID in songIDList):
+				songIDList.append(songID)
+				songNameList.append(songName[songID])
+				yearList.append(songYear[songID])
+				relationshipList.append(curRelationship)
+
+
 			# Make an edge between this node and the artist
-			graph.add_edge(collaboratorID, artistID, songID=songID, song=songName[songID], year=songYear[songID], relationship=curRelationship)
+			graph.add_edge(collaboratorID, artistID, songID=str(songIDList), song=str(songNameList), year=str(yearList), relationship=str(relationshipList))
 
-nx.write_graphml(graph, "outputGraph.graphml")
-
+outputGraphName = "Static "
+if (MORE_CONNECTIONS):
+	outputGraphName = outputGraphName + "Undirected Graph.graphml"
+else:
+	outputGraphName = outputGraphName + "Directed Graph.graphml"
+nx.write_graphml(graph, outputGraphName)
