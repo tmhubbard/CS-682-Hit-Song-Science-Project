@@ -41,6 +41,9 @@ ballPointsX = [x[0] for x in ballPoints]
 ballPointsY = [x[1] for x in ballPoints]
 boomerangPointsX = [x[0] for x in boomerangPoints]
 boomerangPointsY = [x[1] for x in boomerangPoints]
-plt.scatter(ballPointsX, ballPointsY, color="green")
-plt.scatter(boomerangPointsX, boomerangPointsY, color="purple")
+fig = plt.figure()
+ax = fig.add_axes([0, 0, 1, 1])
+ax.set_title("2-Dimensional Network Embedding of Music Industry Social Network")
+ax.scatter(ballPointsX, ballPointsY, color="green")
+ax.scatter(boomerangPointsX, boomerangPointsY, color="purple")
 plt.show()
