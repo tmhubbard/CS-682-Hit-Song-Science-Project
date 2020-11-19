@@ -17,9 +17,11 @@ from tqdm import tqdm
 import json
 
 print("Loading JSON")
-with open('Spotify Features, 1990-2010.json', 'r', encoding='utf-8') as f:
+spotifyPath = "C:\Data\College\CS 682 - Neural Networks\Project\Task 1 - Data Collection\Data\Spotify Features, 1990-2010.json"
+with open(spotifyPath, 'r', encoding='utf-8') as f:
     json_data = json.load(f)['songs']
 
+print(json_data[0])
 json_X = []
 json_y = []
 print("Building Dataset")
@@ -80,10 +82,6 @@ def zero_weight(shape):
     return torch.zeros(shape, device=device, dtype=dtype, requires_grad=True)
 
 def check_accuracy(loader, model, is_train):
-    if is_train:
-        print('Checking accuracy on train set')
-    else:
-        print('Checking accuracy on validation set')   
     num_correct = 0
     num_samples = 0
     model.eval()  # set model to evaluation mode
@@ -106,7 +104,6 @@ def check_accuracy(loader, model, is_train):
 def train(model, optimizer, epochs=1):
     model = model.to(device=device)  # move the model parameters to CPU/GPU
     for e in range(epochs):
-        print('Epoch: {}'.format(e))
         for t, (x, y) in enumerate(loader_train):
             model.train()  # put model to training mode
             x = x.to(device=device, dtype=dtype)  # move to device, e.g. GPU
@@ -123,7 +120,6 @@ def train(model, optimizer, epochs=1):
             optimizer.step()
 
             if t % print_every == 0:
-                print('Iteration %d, loss = %.4f' % (t, loss.item()))
                 plot_x.append(300*e + t)
                 plot_y.append(check_accuracy(loader_val, model, False)[0])
                 print()
@@ -142,11 +138,11 @@ class TwoLayerFC(nn.Module):
         return scores
 
 print("Training Model")
-hidden_layer_size = 20
-learning_rate = 5e-4
+hidden_layer_size = 64
+learning_rate = 0.0005
 model = TwoLayerFC(13, hidden_layer_size, 1)
-optimizer = optim.RMSprop(model.parameters(), lr=learning_rate)
-train(model, optimizer, epochs=20)
+optimizer = optim.Adam(model.parameters(), lr=learning_rate)
+train(model, optimizer, epochs=100)
 
 print(check_accuracy(loader_train, model, True))
 print(check_accuracy(loader_val, model, False))

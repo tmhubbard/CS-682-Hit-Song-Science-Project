@@ -95,15 +95,15 @@ def checkAccuracy(loader, model):
 			num_samples += len(y)
 		return (num_correct/num_samples)
 
-
-
 # =========================
 #        * MAIN * 
 # =========================
 
 # Creating the Dataset from the song embedding .tsv
-songTsvPath = "C:\\Data\\College\\CS 682 - Neural Networks\\Project\\Task 3 - Network Development\\Data\\Song Embeddings - Average, Normalized.tsv"
+print("\nReading in the dataset...")
+songTsvPath = "C:\\Data\\College\\CS 682 - Neural Networks\\Project\\Task 3 - Network Development\\Data\\Song Embeddings - 128 dim.tsv"
 songs = SongDataset(songTsvPath)
+print("Finished reading in the dataset!\n")
 
 # Creating the training / validation split 
 validationSplit = .2
@@ -124,23 +124,31 @@ loader_val = torch.utils.data.DataLoader(songs, batch_size=64, sampler=sampler_v
 embedding_dim = (len(songs[0][0]))
 
 # Define a model using nn.Sequential
-hidden_amt_1 = 128
-hidden_amt_2 = 64
+hidden_amt_1 = 1024
+hidden_amt_2 = 512
+hidden_amt_3 = 256
+hidden_amt_4 = 32
 model = nn.Sequential(nn.Linear(embedding_dim, hidden_amt_1),
 					  nn.ReLU(),
 					  nn.BatchNorm1d(hidden_amt_1),
 					  nn.Linear(hidden_amt_1, hidden_amt_2),
 					  nn.ReLU(),
 					  nn.BatchNorm1d(hidden_amt_2),
-					  nn.Linear(hidden_amt_2, 1))
+					  nn.Linear(hidden_amt_2, hidden_amt_3),
+					  nn.ReLU(),
+					  nn.BatchNorm1d(hidden_amt_3),
+					  nn.Linear(hidden_amt_3, hidden_amt_4),
+					  nn.ReLU(),
+					  nn.BatchNorm1d(hidden_amt_4),
+					  nn.Linear(hidden_amt_4, 1))
 
 # Set some hyperparameters for the model
 epochs = 1000
-learning_rate = 0.001
+learning_rate = 0.000005
 
 # Train the model
 model = model.to("cuda")
-optimizer = optim.SGD(model.parameters(), lr=learning_rate)
+optimizer = optim.Adam(model.parameters(), lr=learning_rate)
 for e in range(epochs):
 	for idx, (x, y) in enumerate(loader_train):
 		
@@ -158,5 +166,7 @@ for e in range(epochs):
 		optimizer.step()
 
 	# Check the accuracy every epoch
-	curAccuracy = checkAccuracy(loader_val, model)
-	print("Epoch %d: %.4f accuracy" % (e, curAccuracy))
+	valAccuracy = checkAccuracy(loader_val, model)
+	trainAccuracy = checkAccuracy(loader_train, model)
+	print("Epoch %d: %.4f val accuracy" % (e, valAccuracy))
+	print("Epoch %d: %.4f train accuracy\n" % (e, trainAccuracy))

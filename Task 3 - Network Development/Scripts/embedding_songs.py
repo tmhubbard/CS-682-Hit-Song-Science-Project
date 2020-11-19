@@ -23,8 +23,8 @@ with open(datasetJsonPath, "r") as datasetJson:
 
 # Setting up artistDict (artistID --> 10-dim embedding)
 artistDict = {}
-dimCount = 10
-embeddingPath = "C:\Data\College\CS 682 - Neural Networks\Project\Task 3 - Network Development\Data\industryGraph - 10 dim embedding.emd"
+dimCount = 128
+embeddingPath = "C:\Data\College\CS 682 - Neural Networks\Project\Task 3 - Network Development\Data\industryGraph - 128 dim embedding.emd"
 with open(embeddingPath, "r", encoding="utf-8") as embeddingFile:
 	for lineNum, line in enumerate(embeddingFile):
 		if (lineNum == 0): continue
@@ -95,7 +95,6 @@ for songNum, song in enumerate(songs):
 	
 	if (songNum % 1000 == 0): 
 		print("Calculating embedding for song %d..." % songNum)
-	if (songNum == 100): break
 
 	songTitle, songID = song["title"]
 	artist = song["artist"][0]
@@ -110,4 +109,7 @@ for songNum, song in enumerate(songs):
 
 columnNames = ["title", "songID", "artist", "artistID", "hit"] + [("emb_dim_%d" % embNum) for embNum in range(len(embedding))]
 songDF = pd.DataFrame(songList, columns=columnNames)
-songDF.to_excel("../Data/Song Embeddings.xlsx")
+saveName = "../Data/Song Embeddings - " + str(dimCount) + " dim.xlsx"
+print("\nSaving the song embeddings to disk...")
+songDF.to_excel(saveName)
+print("Finished saving the embeddings!")
