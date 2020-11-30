@@ -16,11 +16,13 @@ from tqdm import tqdm
 
 import json
 
+# Load spotify audio features
 print("Loading JSON")
 spotifyPath = "C:\Data\College\CS 682 - Neural Networks\Project\Task 1 - Data Collection\Data\Spotify Features, 1990-2010.json"
 with open(spotifyPath, 'r', encoding='utf-8') as f:
     json_data = json.load(f)['songs']
 
+# Turn songs list into features/target datasets.
 print(json_data[0])
 json_X = []
 json_y = []
@@ -33,6 +35,7 @@ for i in tqdm(range(len(json_data))):
         json_X.append([json_data[i]['audio_features'][feature] for feature in features])
         json_y.append(int(json_data[i]['hit']))
 
+# Randomly sample hits and non-hits such that they maintain an equal proportion of the result
 non_hit_to_hits = 1
 class_sample_count = np.array([len(np.where(json_y == t)[0]) for t in np.unique(json_y)])
 weight = [1, 0]
@@ -42,20 +45,25 @@ subsample_idxs += [i for i in range(len(json_y)) if json_y[i] == 1]
 json_X = [json_X[i] for i in subsample_idxs]
 json_y = [json_y[i] for i in subsample_idxs]
 
+# Split sampled data into training and validation sets.
 X_train, X_val, y_train, y_val = train_test_split(json_X, json_y, test_size=0.20, stratify=json_y)
 
+# Normalize the data
 scaler = StandardScaler()
 X_train = scaler.fit_transform(X_train)
 X_val = scaler.fit_transform(X_val)
 
 batch_size = 32
 
+# Create training dataloader
 dataset_train = TensorDataset(torch.Tensor(X_train), torch.Tensor(y_train))
 loader_train  = DataLoader(dataset_train, batch_size=batch_size, sampler=SubsetRandomSampler(range(len(X_train))))
 
+# Create validation dataloader
 dataset_val   = TensorDataset(torch.Tensor(X_val), torch.Tensor(y_val))
 loader_val    = DataLoader(dataset_val, batch_size=batch_size, sampler=SubsetRandomSampler(range(len(X_val))))
 
+# CUDA setup settings
 USE_GPU = True
 dtype = torch.float32
 if USE_GPU and torch.cuda.is_available():
@@ -68,6 +76,7 @@ print_every = 100
 plot_x = []
 plot_y = []
 
+# Creates random numpy array of certain shape
 def random_weight(shape):
     if len(shape) == 2:
         fan_in = shape[0]
@@ -78,9 +87,11 @@ def random_weight(shape):
     w.requires_grad = True
     return w
 
+# Creates zero numpy array of certain shape
 def zero_weight(shape):
     return torch.zeros(shape, device=device, dtype=dtype, requires_grad=True)
 
+# Checks the accuracy of the model against the validation set.
 def check_accuracy(loader, model, is_train):
     num_correct = 0
     num_samples = 0
@@ -101,6 +112,7 @@ def check_accuracy(loader, model, is_train):
         print('Got %d / %d correct (%.2f)' % (num_correct, num_samples, 100 * acc))
         return (acc, confusion_matrix(total_y, total_preds))
 
+# Trains the model using binary cross entropy loss
 def train(model, optimizer, epochs=1):
     model = model.to(device=device)  # move the model parameters to CPU/GPU
     for e in range(epochs):
@@ -137,6 +149,7 @@ class TwoLayerFC(nn.Module):
         scores = self.fc2(x)
         return scores
 
+# Initialize the model
 print("Training Model")
 hidden_layer_size = 64
 learning_rate = 0.0005
@@ -144,9 +157,11 @@ model = TwoLayerFC(13, hidden_layer_size, 1)
 optimizer = optim.Adam(model.parameters(), lr=learning_rate)
 train(model, optimizer, epochs=100)
 
+# Check model accuracy
 print(check_accuracy(loader_train, model, True))
 print(check_accuracy(loader_val, model, False))
 
+# Plot change in loss during training
 plt.plot(plot_x, plot_y)
 plt.axis([0,3000,.5,.8])
 plt.show()
