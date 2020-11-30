@@ -5,8 +5,8 @@ from tqdm import tqdm
 import json
 import csv
 
-client_id     = 'a854b6dbb3424748b2c72ca6fee073a7'
-client_secret = 'a1c0b693cda543238446b5828e60139d' 
+client_id     = 'YOUR SPOTIFY ID HERE'
+client_secret = 'YOUR SPOTIFY SECRET HERE' 
 
 spotify = spotipy.Spotify(client_credentials_manager=SpotifyClientCredentials(client_id=client_id, client_secret=client_secret))
 
