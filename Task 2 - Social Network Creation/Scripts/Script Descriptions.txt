@@ -1,0 +1,27 @@
+dataset_characterize.py
+=======================
+This script creates a xlsx file characterizing all of the data in the Genius dataset; this is for the purpose of exploratory work before creating the social network.
+
+
+
+graph_create_gexf - attribute emb class.py
+==========================================
+This script creates a graph from the various artists in the Genius dataset. This also creates node2vec classes from the node embeddings.
+
+
+
+graph_create_gexf.py
+====================
+This script creates a graph from the various artists in the Genius dataset. The created graph is a gexf file.
+
+
+
+graph_create_graphml.py
+=======================
+This script creates a graph from the various artists in the Genius dataset. The created graph is a graphml file.
+
+
+
+graph_create_node2vec.py
+========================
+This script creates a graph from the various artists in the Genius dataset. The created graph is of the .edgelist filetype. This filetype is used by node2vec.
