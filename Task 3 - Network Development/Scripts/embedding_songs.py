@@ -23,8 +23,8 @@ with open(datasetJsonPath, "r") as datasetJson:
 
 # Setting up artistDict (artistID --> 10-dim embedding)
 artistDict = {}
-dimCount = 128
-embeddingPath = "C:\Data\College\CS 682 - Neural Networks\Project\Task 3 - Network Development\Data\industryGraph - 128 dim embedding.emd"
+dimCount = 32
+embeddingPath = "C:\Data\College\CS 682 - Neural Networks\Project\Task 3 - Network Development\Data\industryGraph - 32 dim embedding.emd"
 with open(embeddingPath, "r", encoding="utf-8") as embeddingFile:
 	for lineNum, line in enumerate(embeddingFile):
 		if (lineNum == 0): continue
@@ -105,7 +105,7 @@ def songEmbedding_half(song):
 print("\nCalculating song embeddings for each song...")
 
 songEmbedder = songEmbedding_average
-embeddingType = "half"
+embeddingType = "average"
 if (embeddingType == "half"):
 	songEmbedder = songEmbedding_half
 
