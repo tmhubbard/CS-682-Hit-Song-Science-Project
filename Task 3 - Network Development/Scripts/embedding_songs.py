@@ -82,6 +82,20 @@ def songEmbedding_average(song):
 	embeddingList = np.array([artist[3] for artist in artistTuples])
 	songEmbedding = np.sum(embeddingList, axis=0)/len(artistTuples)
 	return songEmbedding
+
+def songEmbedding_half(song):
+
+	# Grab the artist information 
+	artistTuples = retrieveArtistTuples(song)
+
+	# Figure out which artist is the primary artist
+	primaryArtistEmbedding = np.array(artistTuples[0][3])
+	songEmbedding = primaryArtistEmbedding
+	if (len(artistTuples) > 1):
+		collaboratorEmbeddings = np.array([artist[3] for artist in artistTuples[1:]])
+		collaboratorAvgEmbedding = np.sum(collaboratorEmbeddings, axis=0)/len(collaboratorEmbeddings)
+		songEmbedding = (primaryArtistEmbedding + collaboratorAvgEmbedding) / 2
+	return songEmbedding
 	
 # =========================
 #        * MAIN * 
@@ -89,6 +103,11 @@ def songEmbedding_average(song):
 
 # Printing some information
 print("\nCalculating song embeddings for each song...")
+
+songEmbedder = songEmbedding_average
+embeddingType = "half"
+if (embeddingType == "half"):
+	songEmbedder = songEmbedding_half
 
 songList = []
 for songNum, song in enumerate(songs):
@@ -102,14 +121,14 @@ for songNum, song in enumerate(songs):
 	hit = 0
 	if (song["hit"] == True):
 		hit = 1
-	embedding = songEmbedding_average(song)
+	embedding = songEmbedder(song)
 	if (np.array_equal(embedding,np.zeros(dimCount))):
 		embedding += -10
 	songList.append([songTitle, songID, artist, artistID, hit] + [x for x in list(embedding)])
 
 columnNames = ["title", "songID", "artist", "artistID", "hit"] + [("emb_dim_%d" % embNum) for embNum in range(len(embedding))]
 songDF = pd.DataFrame(songList, columns=columnNames)
-saveName = "../Data/Song Embeddings - " + str(dimCount) + " dim.xlsx"
+saveName = "../Data/Song Embeddings - " + str(dimCount) + " dim (" + embeddingType + ").xlsx"
 print("\nSaving the song embeddings to disk...")
 songDF.to_excel(saveName)
 print("Finished saving the embeddings!")

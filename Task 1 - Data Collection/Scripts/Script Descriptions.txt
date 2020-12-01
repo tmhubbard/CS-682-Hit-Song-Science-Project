@@ -58,19 +58,9 @@ These two scripts were used to extract data from the .h5 metadata file that cont
 
 
 
-spotify_audio_features_scraper.py
-=================================
-Runs through the URI's in spotify_uris.csv created from spotify_uri_scraper.py. These URI's come with the found song title and artist. If the found song title and artist are close enough (using various levenshtein distances) to the searched for song title and artist, then the URI is added to a batch. Each batch of URI's are sent to the Spotify API Audio Features endpoint. The JSON for the songs are updated with the audio features and saved to a new file.
 
 
 
-spotify_non_found_uri_scraper.py
-================================
-This script runs through the spotify_uris.csv file created from the spotify_uri_scraper.py script. For any song where a URI was not found, it edits the title and artist to remove any non-word or non-space character before searching spotify again with it. The CSV file is updated with any newfound URIs.
 
 
-
-spotify_uri_scraper.py
-======================
-This script runs through the songs from the "Genius Info - Billboard + MSD, 1990-2010.json" file and performs a search through the Spotify API to get the spotify URI for the track. The results from this search are stored in the spotify_uris.csv file. For each song, the file has the searched for title/artist, the found title/artist/uri, and whether it is a hit or not.
 
