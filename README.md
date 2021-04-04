@@ -8,7 +8,7 @@ In the paper, we improve upon previous solutions to the “Hit Song Science” p
 *A diagram of our methods* 
 
 ![The co-collaborator social network](https://i.imgur.com/AjME1EW.png)
-*A visualization of the music industry co-collaborator network we built *
+*A visualization of the music industry co-collaborator network we built*
 
 Elaboration on our methodologies and results can be found in the final paper! The data we scraped for the project can be found on [this Mega drive](https://mega.nz/folder/0LoxhagD#Ngs65bJk2_m), and the [Jupyter notebook with the final model](https://github.com/tmhubbard/Hit-Song-Predictor/blob/main/Task%203%20-%20Network%20Development/Scripts/Neural%20A%26R%20-%20Hit%20Song%20Prediction%20Network.ipynb) is in Task 3’s Scripts folder. 
 
